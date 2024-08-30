@@ -18,9 +18,10 @@ namespace trajopt {
 
 SwerveTrajectoryGenerator::SwerveTrajectoryGenerator(
     SwervePathBuilder pathBuilder, int64_t handle)
-    : path(pathBuilder.GetPath()), Ns(pathBuilder.GetControlIntervalCounts()) {
+    : path(pathBuilder.GetPath()), Ns(pathBuilder.GetControlIntervalCounts()),
+      dtGuesses(pathBuilder.GetControlIntervalDts()) {
   auto initialGuess = pathBuilder.CalculateInitialGuess();
-
+  
   callbacks.emplace_back([this, handle = handle] {
     constexpr int fps = 60;
     constexpr std::chrono::duration<double> timePerFrame{1.0 / fps};
@@ -91,20 +92,6 @@ SwerveTrajectoryGenerator::SwerveTrajectoryGenerator(
     auto mod_b = path.drivetrain.modules.at(mod_b_idx);
     minWidth = std::min(
         minWidth, std::hypot(mod_a.X() - mod_b.X(), mod_a.Y() - mod_b.Y()));
-
-    // if (std::abs(path.drivetrain.modules.at(i - 1).X() -
-    //              path.drivetrain.modules.at(i).X()) != 0) {
-    //   minWidth =
-    //       std::min(minWidth, std::abs(path.drivetrain.modules.at(i - 1).X() -
-    //                                   path.drivetrain.modules.at(i).X()));
-    // }
-    // if (std::abs(path.drivetrain.modules.at(i - 1).Y() -
-    //              path.drivetrain.modules.at(i).Y()) != 0) {
-    //   minWidth =
-    //       std::min(minWidth, std::abs(path.drivetrain.modules.at(i - 1).Y() -
-    //                                   path.drivetrain.modules.at(i).Y()));
-    // }
-    // min_width = min_width.min(mod_a.x - mod_b.x).hypot(mod_a.y - mod_b.y);
   }
 
   for (size_t sgmtIndex = 0; sgmtIndex < sgmtCnt; ++sgmtIndex) {
@@ -125,7 +112,7 @@ SwerveTrajectoryGenerator::SwerveTrajectoryGenerator(
     T_tot += T_sgmt;
 
     problem.SubjectTo(dt_sgmt >= 0);
-    dt_sgmt.SetValue(5.0 / N_sgmt);
+    dt_sgmt.SetValue(dtGuesses.at(sgmtIndex));
   }
   problem.Minimize(std::move(T_tot));
 

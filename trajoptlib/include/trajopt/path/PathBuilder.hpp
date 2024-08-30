@@ -297,6 +297,12 @@ class TRAJOPT_DLLEXPORT PathBuilder {
    */
   void ControlIntervalCounts(std::vector<size_t>&& counts) {
     controlIntervalCounts = std::move(counts);
+    if (controlIntervalDts.size() != controlIntervalCounts.size()) {
+      controlIntervalDts.clear();
+      for (auto count : controlIntervalCounts) {
+        controlIntervalDts.emplace_back(5.0 / static_cast<double>(count));
+      }
+    }
   }
 
   /**
@@ -306,6 +312,26 @@ class TRAJOPT_DLLEXPORT PathBuilder {
    */
   const std::vector<size_t>& GetControlIntervalCounts() const {
     return controlIntervalCounts;
+  }
+
+  /**
+   * If using a discrete algorithm, specify the dt between discrete
+   * samples for every segment of the trajectory
+   *
+   * @param dts the dt between control intervals per segment, length
+   * is number of waypoints - 1
+   */
+  void ControlIntervalDts(std::vector<double>&& dts) {
+    controlIntervalDts = std::move(dts);
+  }
+
+  /**
+   * Get the Control Interval Dts object
+   *
+   * @return const std::vector<double>&
+   */
+  const std::vector<double>& GetControlIntervalDts() const {
+    return controlIntervalDts;
   }
 
   /**
@@ -346,6 +372,8 @@ class TRAJOPT_DLLEXPORT PathBuilder {
 
   /// The control interval counts.
   std::vector<size_t> controlIntervalCounts;
+
+  std::vector<double> controlIntervalDts;
 
   /**
    * Add new waypoints up to and including the given index.

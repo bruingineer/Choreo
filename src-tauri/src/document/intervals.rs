@@ -12,13 +12,20 @@ pub fn cmd_guess_control_interval_counts(
     config: RobotConfig<Expr>,
     traj: Traj,
 ) -> Result<Vec<usize>> {
-    guess_control_interval_counts(&config, &traj)
+    let interval = guess_control_interval_counts(&config, &traj)?;
+    Ok(interval.counts)
+}
+
+pub struct IntervalDiscretization {
+    pub counts: Vec<usize>,
+    pub dts: Vec<f64>
+    
 }
 
 pub fn guess_control_interval_counts(
     config: &RobotConfig<Expr>,
     traj: &Traj,
-) -> Result<Vec<usize>> {
+) -> Result<IntervalDiscretization> {
     let config = config.snapshot();
     if config.wheel_max_torque() <= 0.0 {
         return Err(ChoreoError::Sign("Wheel max torque", "positive"));
@@ -29,19 +36,26 @@ pub fn guess_control_interval_counts(
     } else if config.radius <= 0.0 {
         return Err(ChoreoError::Sign("Wheel radius", "positive"));
     }
-    Ok(traj
+    let mut interval_discretization = IntervalDiscretization {
+        counts: Vec::new(),
+        dts: Vec::new(),
+    };
+    traj
         .path
         .waypoints
         .iter()
         .enumerate()
-        .map(|(i, w)| {
+        .for_each(|(i, w)| {
             if w.override_intervals {
-                w.intervals
+                interval_discretization.counts.push(w.intervals);
+                interval_discretization.dts.push(5.0);
             } else {
-                guess_control_interval_count(i, traj, config, w)
+                let interval_quantities = guess_control_interval_count(i, traj, config, w);
+                interval_discretization.counts.push(interval_quantities.0);
+                interval_discretization.dts.push(interval_quantities.1);
             }
-        })
-        .collect::<Vec<usize>>())
+        });
+        Ok(interval_discretization)
 }
 
 #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
@@ -50,11 +64,11 @@ pub fn guess_control_interval_count(
     traj: &Traj,
     config: RobotConfig<f64>,
     w: &Waypoint<Expr>,
-) -> usize {
+) -> (usize, f64) {
     let this = w.snapshot();
     let next = traj.path.waypoints.get(i + 1).map(Waypoint::snapshot);
     match next {
-        None => this.intervals,
+        None => (this.intervals, 5.0),
         Some(next) => {
             let dx = next.x - this.x;
             let dy = next.y - this.y;
@@ -149,14 +163,6 @@ pub fn guess_control_interval_count(
                     .modules
                     .get(mod_b_idx)
                     .expect("Module expected when finding minimum width.");
-                // using the current impl of trajoptlib "minimum width"
-                // if (mod_a.x - mod_b.x).abs() != 0. {
-                //     min_width = min_width.min((mod_a.x - mod_b.x).abs());
-                // };
-                // if (mod_a.y - mod_b.y).abs() != 0. {
-                //     min_width = min_width.min((mod_a.y - mod_b.y).abs());
-                // };
-                // TODO: swap trajoptlib and here with logic below
                 min_width = min_width.min(mod_a.x - mod_b.x).hypot(mod_a.y - mod_b.y);
             }
             let dt_ceiling = min_width / (config.wheel_max_velocity() * config.radius);
@@ -169,7 +175,7 @@ pub fn guess_control_interval_count(
                 // trapezoid
                 distance / max_vel + max_vel / max_accel
             };
-            (total_time / dt).ceil() as usize
+            return ((total_time / dt).ceil() as usize, dt);
         }
     }
 }

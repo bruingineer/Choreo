@@ -250,6 +250,7 @@ class TRAJOPT_DLLEXPORT SwerveTrajectoryGenerator {
 
   /// Discretization Constants
   std::vector<size_t> Ns;
+  std::vector<double> dtGuesses;
 
   sleipnir::OptimizationProblem problem;
   std::vector<std::function<void()>> callbacks;

@@ -76,6 +76,7 @@ mod ffi {
         fn set_drivetrain(self: Pin<&mut SwervePathBuilder>, drivetrain: &SwerveDrivetrain);
         fn set_bumpers(self: Pin<&mut SwervePathBuilder>, length: f64, width: f64);
         fn set_control_interval_counts(self: Pin<&mut SwervePathBuilder>, counts: Vec<usize>);
+        fn set_control_interval_dts(self: Pin<&mut SwervePathBuilder>, dts: Vec<f64>);
 
         fn pose_wpt(self: Pin<&mut SwervePathBuilder>, index: usize, x: f64, y: f64, heading: f64);
         fn translation_wpt(
@@ -201,6 +202,7 @@ mod ffi {
         );
         fn set_bumpers(self: Pin<&mut DifferentialPathBuilder>, length: f64, width: f64);
         fn set_control_interval_counts(self: Pin<&mut DifferentialPathBuilder>, counts: Vec<usize>);
+        fn set_control_interval_dts(self: Pin<&mut DifferentialPathBuilder>, dts: Vec<f64>);
 
         fn pose_wpt(
             self: Pin<&mut DifferentialPathBuilder>,
@@ -342,6 +344,13 @@ impl SwervePathBuilder {
         crate::ffi::SwervePathBuilder::set_control_interval_counts(
             self.path_builder.pin_mut(),
             counts,
+        );
+    }
+
+    pub fn set_control_interval_dts(&mut self, dts: Vec<f64>) {
+        crate::ffi::SwervePathBuilder::set_control_interval_dts(
+            self.path_builder.pin_mut(),
+            dts,
         );
     }
 
@@ -610,6 +619,13 @@ impl DifferentialPathBuilder {
         crate::ffi::DifferentialPathBuilder::set_control_interval_counts(
             self.path_builder.pin_mut(),
             counts,
+        );
+    }
+
+    pub fn set_control_interval_dts(&mut self, dts: Vec<f64>) {
+        crate::ffi::DifferentialPathBuilder::set_control_interval_dts(
+            self.path_builder.pin_mut(),
+            dts,
         );
     }
 

@@ -41,6 +41,16 @@ void SwervePathBuilder::set_control_interval_counts(
   path_builder.ControlIntervalCounts(std::move(cppCounts));
 }
 
+void SwervePathBuilder::set_control_interval_dts(
+    const rust::Vec<double> dts) {
+  std::vector<double> cppDts;
+  for (const auto& dt : dts) {
+    cppDts.emplace_back(dt);
+  }
+
+  path_builder.ControlIntervalDts(std::move(cppDts));
+}
+
 void SwervePathBuilder::set_bumpers(double length, double width) {
   path_builder.AddBumpers(
       trajopt::Bumpers{.safetyDistance = 0.01,
@@ -256,6 +266,16 @@ void DifferentialPathBuilder::set_control_interval_counts(
   }
 
   path_builder.ControlIntervalCounts(std::move(cppCounts));
+}
+
+void DifferentialPathBuilder::set_control_interval_dts(
+    const rust::Vec<double> dts) {
+  std::vector<double> cppDts;
+  for (const auto& dt : dts) {
+    cppDts.emplace_back(dt);
+  }
+
+  path_builder.ControlIntervalDts(std::move(cppDts));
 }
 
 void DifferentialPathBuilder::set_bumpers(double length, double width) {

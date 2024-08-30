@@ -14,7 +14,8 @@ namespace trajopt {
 
 DifferentialTrajectoryGenerator::DifferentialTrajectoryGenerator(
     DifferentialPathBuilder pathbuilder, int64_t handle)
-    : path(pathbuilder.GetPath()), Ns(pathbuilder.GetControlIntervalCounts()) {
+    : path(pathbuilder.GetPath()), Ns(pathbuilder.GetControlIntervalCounts()),
+    dtGuesses(pathbuilder.GetControlIntervalDts()) {
   auto initialGuess = pathbuilder.CalculateInitialGuess();
 
   callbacks.emplace_back([this, handle = handle] {

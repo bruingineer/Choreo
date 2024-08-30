@@ -61,10 +61,17 @@ pub async fn generate(
     if path.len() < 2 {
         return Err(ChoreoError::OutOfBounds("Waypoints", "at least 2"));
     }
-    let counts_vec = guess_control_interval_counts(&chor.config, &traj)?;
+    let interval_discretization = guess_control_interval_counts(&chor.config, &traj)?;
+    let counts_vec = interval_discretization.counts;
     if counts_vec.len() != path.len() {
         return Err(ChoreoError::Inequality(
             "Control interval counts",
+            "waypoint count",
+        ));
+    }
+    if interval_discretization.dts.len() != path.len() {
+        return Err(ChoreoError::Inequality(
+            "Control interval dts",
             "waypoint count",
         ));
     }
@@ -151,6 +158,7 @@ pub async fn generate(
     }
 
     path_builder.set_control_interval_counts(control_interval_counts);
+    path_builder.set_control_interval_dts(interval_discretization.dts);
 
     for constraint in &constraint_idx {
         let from = fix_scope(constraint.from, &guess_point_idxs);
