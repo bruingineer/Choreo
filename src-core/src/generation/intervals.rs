@@ -175,7 +175,7 @@ pub fn guess_control_interval_count(
             }
             .max(0.2); // keep some time allocated for rotating
             let total_time = linear_time + angular_time;
-            tracing::debug!("dt estimate: {dt} - total time estimate: {total_time}");
+            tracing::debug!("Segment {i} dt estimate: {dt} - total time estimate: {total_time}");
             (total_time / dt).ceil() as usize
         }
     }
