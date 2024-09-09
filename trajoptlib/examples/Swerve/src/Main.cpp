@@ -17,10 +17,10 @@ int main() {
   trajopt::SwerveDrivetrain swerveDrivetrain{
       .mass = 45,
       .moi = 6,
-      .modules = {{{+0.6, +0.6}, 0.04, 70, 2},
-                  {{+0.6, -0.6}, 0.04, 70, 2},
-                  {{-0.6, +0.6}, 0.04, 70, 2},
-                  {{-0.6, -0.6}, 0.04, 70, 2}}};
+      .wheelRadius = 0.04,
+      .wheelMaxAngularVelocity = 70,
+      .wheelMaxTorque = 2,
+      .modules = {{+0.6, +0.6}, {+0.6, -0.6}, {-0.6, +0.6}, {-0.6, -0.6}}};
 
   trajopt::LinearVelocityMaxMagnitudeConstraint zeroLinearVelocity{0.0};
   trajopt::AngularVelocityMaxMagnitudeConstraint zeroAngularVelocity{0.0};
@@ -148,14 +148,14 @@ int main() {
     path.SetDrivetrain(swerveDrivetrain);
 
     path.PoseWpt(0, 0.0, 0.0, 0.0);
-    path.SgmtConstraint(
-        0, 1,
-        trajopt::PointPointConstraint{// Robot point -- center of robot
-                                      {0.0, 0.0},
-                                      // Field point around which to orbit
-                                      {1.0, 0.0},
-                                      // Stay 1 m away to force circular motion
-                                      1.0});
+    path.SgmtConstraint(0, 1,
+                        trajopt::PointPointMinConstraint{
+                            // Robot point -- center of robot
+                            {0.0, 0.0},
+                            // Field point around which to orbit
+                            {1.0, 0.0},
+                            // Stay 1 m away to force circular motion
+                            1.0});
 
     // Tell optimizer to go in +y direction rather than -y
     path.WptInitialGuessPoint(0, {0.0, 0.0, 0.0});

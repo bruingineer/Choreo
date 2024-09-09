@@ -1,8 +1,7 @@
-import { Instance, types } from "mobx-state-tree";
-import { SavedPathList } from "./DocumentSpecTypes";
-import { HolonomicPathStore } from "./HolonomicPathStore";
-import { v4 as uuidv4 } from "uuid";
-import { ConstraintStores } from "./ConstraintStore";
+import { Instance, getEnv, types } from "mobx-state-tree";
+import { Traj } from "./2025/DocumentTypes";
+import { Env } from "./DocumentManager";
+import { HolonomicPathStore } from "./path/HolonomicPathStore";
 
 export const PathListStore = types
   .model("PathListStore", {
@@ -10,7 +9,7 @@ export const PathListStore = types
     activePathUUID: ""
   })
   .actions((self) => {
-    let pathExporter: (uuid: string) => void = (uuid) => {};
+    let pathExporter: (uuid: string) => void = (_uuid) => {};
     return {
       setExporter(exportFunction: (uuid: string) => void) {
         pathExporter = exportFunction;
@@ -23,13 +22,6 @@ export const PathListStore = types
   })
   .views((self) => {
     return {
-      asSavedPathList(): SavedPathList {
-        const obj: any = {};
-        self.paths.forEach((path) => {
-          obj[path.name] = path.asSavedPath();
-        });
-        return obj;
-      },
       toJSON(): any {
         const obj: any = {};
         self.paths.forEach((path) => {
@@ -48,12 +40,28 @@ export const PathListStore = types
       },
       get activePath() {
         return (
-          self.paths.get(self.activePathUUID) ||
+          self.paths.get(self.activePathUUID)! ||
           HolonomicPathStore.create({
+            uuid: crypto.randomUUID(),
             name: "New Path",
-            visibleWaypointsStart: 0,
-            visibleWaypointsEnd: 0,
-            uuid: uuidv4()
+            params: {
+              constraints: [],
+              waypoints: [],
+              obstacles: []
+            },
+            ui: {
+              visibleWaypointsEnd: 0,
+              visibleWaypointsStart: 0
+            },
+            snapshot: {
+              waypoints: [],
+              constraints: []
+            },
+            traj: {
+              waypoints: [],
+              samples: [],
+              markers: []
+            }
           })
         );
       }
@@ -75,24 +83,50 @@ export const PathListStore = types
           self.activePathUUID = uuid;
         }
       },
-      addPath(name: string, select: boolean = false): string {
+      addPath(name: string, select: boolean = false, contents?: Traj): string {
         const usedName = this.disambiguateName(name);
-        const newUUID = uuidv4();
-        const path = HolonomicPathStore.create({
-          uuid: newUUID,
-          visibleWaypointsStart: 0,
-          visibleWaypointsEnd: 0,
-          name: usedName,
-          waypoints: []
-        });
-        path.setExporter(self.getExporter());
-        path.addConstraint(ConstraintStores.StopPoint)?.setScope(["first"]);
-        path.addConstraint(ConstraintStores.StopPoint)?.setScope(["last"]);
-        self.paths.put(path);
-        if (self.paths.size === 1 || select) {
-          self.activePathUUID = newUUID;
-        }
+        const newUUID = crypto.randomUUID();
+        const env = getEnv<Env>(self);
+        env.startGroup(() => {
+          try {
+            const path = HolonomicPathStore.create({
+              uuid: newUUID,
+              name: usedName,
+              params: {
+                constraints: [],
+                waypoints: [],
+                obstacles: []
+              },
+              ui: {
+                visibleWaypointsEnd: 0,
+                visibleWaypointsStart: 0
+              },
+              snapshot: {
+                waypoints: [],
+                constraints: []
+              },
+              traj: {
+                waypoints: [],
+                samples: [],
+                markers: []
+              }
+            });
+            path.setExporter(self.getExporter());
+            self.paths.put(path); //It's not ready yet but it needs to get the env injected
+            if (contents !== undefined) {
+              path.deserialize(contents);
+            } else {
+              path.params.addConstraint("StopPoint", "first");
+              path.params.addConstraint("StopPoint", "last");
+            }
 
+            if (self.paths.size === 1 || select) {
+              self.activePathUUID = newUUID;
+            }
+          } finally {
+            env.stopGroup();
+          }
+        });
         return newUUID;
       }
     };
@@ -118,23 +152,10 @@ export const PathListStore = types
           const newName = self.disambiguateName(oldPath.name);
           const newuuid = self.addPath(newName, false);
           const path = self.paths.get(newuuid);
-          path!.fromSavedPath(oldPath.asSavedPath());
-        }
-      },
-      fromSavedPathList(list: SavedPathList) {
-        self.paths.clear();
-        if (list) {
-          Array.from(Object.keys(list).values()).forEach((name) => {
-            const uuid = self.addPath(name, false);
-            const path = self.paths.get(uuid);
-            path!.fromSavedPath(list[name]);
-          });
-        }
-        if (self.paths.size == 0) {
-          self.addPath("New Path", true);
+          path!.deserialize(oldPath.serialize);
         }
       }
     };
   });
 
-export interface IPathListStore extends Instance<typeof PathListStore> {}
+export type IPathListStore = Instance<typeof PathListStore>;

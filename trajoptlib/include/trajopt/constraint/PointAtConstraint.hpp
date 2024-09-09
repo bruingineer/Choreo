@@ -22,15 +22,19 @@ namespace trajopt {
 class TRAJOPT_DLLEXPORT PointAtConstraint {
  public:
   /**
-   * Cosntructs a PointAtConstraint.
+   * Constructs a PointAtConstraint.
    *
    * @param fieldPoint Field point.
    * @param headingTolerance The allowed robot heading tolerance (radians). Must
    *     be nonnegative.
+   * @param flip False points at the field point while true points away from the
+   *     field point.
    */
-  explicit PointAtConstraint(Translation2d fieldPoint, double headingTolerance)
+  explicit PointAtConstraint(Translation2d fieldPoint, double headingTolerance,
+                             bool flip = false)
       : m_fieldPoint{std::move(fieldPoint)},
-        m_headingTolerance{headingTolerance} {
+        m_headingTolerance{headingTolerance},
+        m_flip{flip} {
     assert(m_headingTolerance >= 0.0);
   }
 
@@ -59,13 +63,21 @@ class TRAJOPT_DLLEXPORT PointAtConstraint {
     auto dx = m_fieldPoint.X() - pose.X();
     auto dy = m_fieldPoint.Y() - pose.Y();
     auto dot = pose.Rotation().Cos() * dx + pose.Rotation().Sin() * dy;
-    problem.SubjectTo(dot >=
-                      std::cos(m_headingTolerance) * sleipnir::hypot(dx, dy));
+    if (!m_flip) {
+      // dot close to 1 * hypot (point toward)
+      problem.SubjectTo(dot >=
+                        std::cos(m_headingTolerance) * sleipnir::hypot(dx, dy));
+    } else {
+      // dot close to -1 * hypot (point away)
+      problem.SubjectTo(dot <= -std::cos(m_headingTolerance) *
+                                   sleipnir::hypot(dx, dy));
+    }
   }
 
  private:
   Translation2d m_fieldPoint;
   double m_headingTolerance;
+  bool m_flip;
 };
 
 }  // namespace trajopt

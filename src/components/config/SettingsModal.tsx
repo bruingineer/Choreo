@@ -1,23 +1,17 @@
-import { observer } from "mobx-react";
-import React, { Component } from "react";
-import DocumentManagerContext from "../../document/DocumentManager";
-import { Fade, IconButton, Modal, Tab, Tabs } from "@mui/material";
-import RobotConfigPanel from "./robotconfig/RobotConfigPanel";
 import { Close } from "@mui/icons-material";
-import ExportConfigPanel from "./ExportConfigPanel";
-import BetasConfigPanel from "./BetasConfigPanel";
-import KeyboardShortcutsPanel from "./KeyboardShortcutsPanel";
+import { Fade, IconButton, Modal, Tab, Tabs } from "@mui/material";
+import { observer } from "mobx-react";
+import { Component } from "react";
+import { uiState } from "../../document/DocumentManager";
+import { SETTINGS_TABS } from "../../document/UIData";
 
 type Props = object;
 
 type State = object;
 
 class SettingsModal extends Component<Props, State> {
-  static contextType = DocumentManagerContext;
-  declare context: React.ContextType<typeof DocumentManagerContext>;
   state = {};
   render() {
-    const uiState = this.context.model.uiState;
     return (
       <Modal
         open={uiState.robotConfigOpen}
@@ -52,7 +46,7 @@ class SettingsModal extends Component<Props, State> {
             >
               <Tabs
                 value={uiState.settingsTab}
-                onChange={(e, newValue) => uiState.setSettingsTab(newValue)}
+                onChange={(_e, newValue) => uiState.setSettingsTab(newValue)}
                 centered
                 textColor="inherit"
                 sx={{
@@ -68,28 +62,18 @@ class SettingsModal extends Component<Props, State> {
                   marginLeft: "8px"
                 }}
               >
-                <Tab label="Robot Config" />
-                <Tab label="Export Config" />
-                <Tab label="Controls" />
-                <Tab label="Betas" />
+                {SETTINGS_TABS.map((data) => (
+                  <Tab key={data.name} label={data.name} />
+                ))}
               </Tabs>
               <IconButton onClick={() => uiState.setRobotConfigOpen(false)}>
                 <Close></Close>
               </IconButton>
             </div>
             <div style={{ paddingTop: 8, flexGrow: 1, overflowY: "scroll" }}>
-              {uiState.settingsTab == 0 && (
-                <RobotConfigPanel></RobotConfigPanel>
-              )}
-              {uiState.settingsTab == 1 && (
-                <ExportConfigPanel></ExportConfigPanel>
-              )}
-              {uiState.settingsTab == 2 && (
-                <KeyboardShortcutsPanel></KeyboardShortcutsPanel>
-              )}
-              {uiState.settingsTab == 3 && (
-                <BetasConfigPanel></BetasConfigPanel>
-              )}
+              {SETTINGS_TABS.map((data, i) => (
+                <>{uiState.settingsTab == i && data.component()}</>
+              ))}
             </div>
           </div>
         </Fade>

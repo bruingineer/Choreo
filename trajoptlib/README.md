@@ -8,7 +8,7 @@ Trajectory optimization works by mathematically formulating the problem of trave
 
 ## Features
 
-* Currently only supports swerve drives with arbitray module configurations
+* Currently only supports swerve drives with arbitrary module configurations
 * Position and velocity constraints at each waypoint
 * Circle and polygon obstacle avoidance
 * Custom physical constraints of robot
@@ -18,16 +18,16 @@ Trajectory optimization works by mathematically formulating the problem of trave
 
 ### Dependencies
 
-* C++23 compiler
-  * On Windows, install [Visual Studio Community 2022](https://visualstudio.microsoft.com/vs/community/) and select the C++ programming language during installation
-  * On Linux, install GCC 14 or greater via `sudo apt install g++`
-  * On macOS 14 or greater, install the Xcode command-line build tools via `xcode-select --install`. Xcode 15.3 or greater is required.
+* C++20 compiler
+  * On Windows 10 or greater, install [Visual Studio Community 2022](https://visualstudio.microsoft.com/vs/community/) and select the C++ programming language during installation
+  * On Ubuntu 22.04 or greater, install GCC 11 via `sudo apt install g++-11`
+  * On macOS 13.3 or greater, install the Xcode 14 command-line build tools via `xcode-select --install`
 * [CMake](https://cmake.org/download/) 3.21 or greater
   * On Windows, install from the link above
   * On Linux, install via `sudo apt install cmake`
   * On macOS, install via `brew install cmake`
 * [Rust](https://www.rust-lang.org/) compiler
-* [Sleipnir](https://github.com/SleipnirGroup/Sleipnir) (optional backend)
+* [Sleipnir](https://github.com/SleipnirGroup/Sleipnir)
 * [Catch2](https://github.com/catchorg/Catch2) (tests only)
 
 Library dependencies which aren't installed locally will be automatically downloaded and built by CMake.

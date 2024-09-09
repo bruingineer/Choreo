@@ -1,28 +1,26 @@
+import { Add, Delete, DragHandle } from "@mui/icons-material";
+import { IconButton, MenuItem, Select, TextField } from "@mui/material";
 import { observer } from "mobx-react";
-import React, { Component } from "react";
+import { isAlive } from "mobx-state-tree";
+import React, { CSSProperties, Component } from "react";
 import {
   Draggable,
   DraggingStyle,
-  NotDraggingStyle,
-  Droppable
-} from "react-beautiful-dnd";
-import DocumentManagerContext from "../../../document/DocumentManager";
-import { isAlive } from "mobx-state-tree";
+  Droppable,
+  NotDraggingStyle
+} from "@hello-pangea/dnd";
 import {
   CommandType,
   CommandUIData,
   ICommandStore
 } from "../../../document/EventMarkerStore";
-import { IconButton, MenuItem, Select, TextField } from "@mui/material";
-import { Add, Delete, DragHandle } from "@mui/icons-material";
-import InputList from "../../input/InputList";
-import Input from "../../input/Input";
+import ExpressionInput from "../../input/ExpressionInput";
+import ExpressionInputList from "../../input/ExpressionInputList";
 
 type Props = {
   command: ICommandStore;
   index: number;
   parent?: ICommandStore;
-  context: React.ContextType<typeof DocumentManagerContext>;
   isDraggable: boolean;
   isRoot?: boolean;
 };
@@ -30,15 +28,13 @@ type Props = {
 type State = { selected: boolean };
 
 class CommandDraggable extends Component<Props, State> {
-  static contextType = DocumentManagerContext;
-  declare context: React.ContextType<typeof DocumentManagerContext>;
   id: number = 0;
   state = { selected: false };
   nameInputRef: React.RefObject<HTMLInputElement> =
     React.createRef<HTMLInputElement>();
 
   getItemStyle(
-    isDragging: boolean,
+    _isDragging: boolean,
     draggableStyle: DraggingStyle | NotDraggingStyle | undefined
   ): CSSProperties {
     return {
@@ -52,10 +48,11 @@ class CommandDraggable extends Component<Props, State> {
 
   render() {
     const command = this.props.command;
+
     // commandsLength is dereferenced so that this rerenders when the length
     // of its subcommands array changes
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const commandsLength = this.props.command?.commands.length;
+    const _ = this.props.command?.commands.length;
+
     const isRoot = this.props.isRoot ?? false;
     if (!isAlive(command)) return <></>;
     return (
@@ -123,16 +120,13 @@ class CommandDraggable extends Component<Props, State> {
             ></TextField>
           )}
           {command.type === "wait" && (
-            <InputList noCheckbox style={{ flexGrow: 1 }}>
-              <Input
+            <ExpressionInputList style={{ flexGrow: 1 }}>
+              <ExpressionInput
                 title={""}
-                suffix={"s"}
                 enabled={true}
                 number={command.time}
-                setNumber={command.setTime}
-                setEnabled={() => {}}
-              ></Input>
-            </InputList>
+              ></ExpressionInput>
+            </ExpressionInputList>
           )}
           {(command.isGroup() || !isRoot) && (
             <span style={{ flexGrow: 1 }}></span>
@@ -197,7 +191,6 @@ class CommandDraggable extends Component<Props, State> {
                           command={c}
                           index={idx}
                           parent={command}
-                          context={this.props.context}
                           isDraggable={true}
                         ></CommandDraggable>
                       </div>

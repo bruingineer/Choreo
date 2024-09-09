@@ -1,7 +1,10 @@
-import { observer } from "mobx-react";
-import React, { Component } from "react";
-import DocumentManagerContext from "../../document/DocumentManager";
-import styles from "./WaypointConfigPanel.module.css";
+import {
+  AspectRatio,
+  Close,
+  Functions,
+  Gradient,
+  Visibility
+} from "@mui/icons-material";
 import {
   IconButton,
   Menu,
@@ -10,10 +13,13 @@ import {
   ToggleButtonGroup,
   Tooltip
 } from "@mui/material";
-import { ViewItemData } from "../../document/UIStateStore";
-import { AspectRatio, Gradient, Visibility } from "@mui/icons-material";
-import { Close } from "@mui/icons-material";
+import { observer } from "mobx-react";
+import React, { Component } from "react";
+import { doc, uiState } from "../../document/DocumentManager";
+import { ViewItemData } from "../../document/UIData";
+import styles from "./WaypointConfigPanel.module.css";
 import { PathGradients } from "./robotconfig/PathGradient";
+import ExpressionsConfigPanel from "./variables/ExpressionsConfigPanel";
 
 type Props = object;
 
@@ -23,8 +29,6 @@ type State = {
 };
 
 class ViewOptionsPanel extends Component<Props, State> {
-  static contextType = DocumentManagerContext;
-  declare context: React.ContextType<typeof DocumentManagerContext>;
   state = {
     selectedElement: null,
     isOpen: false
@@ -44,28 +48,30 @@ class ViewOptionsPanel extends Component<Props, State> {
     event: React.MouseEvent<HTMLLIElement, MouseEvent>
   ) {
     event.stopPropagation();
-    this.context.model.uiState.setSelectedPathGradient(
+    uiState.setSelectedPathGradient(
       PathGradients[selectedPathGradient as keyof typeof PathGradients]
     );
     this.setState({ isOpen: false, selectedElement: null });
   }
 
   render() {
-    const uiState = this.context.model.uiState;
-
     return (
-      <div className={styles.ViewOptionsPanel}>
+      <div
+        className={styles.ViewOptionsPanel}
+        style={{
+          borderLeft: uiState.variablesPanelOpen ? "solid gray 1px" : "none"
+        }}
+      >
         <Tooltip disableInteractive title="Zoom to fit trajectory">
-          {/* If there's no waypoints, then don't allow user to zoom to fit Waypoints */}
-          <IconButton
-            disabled={
-              this.context.model.document.pathlist.activePath.waypoints
-                .length == 0
-            }
-            onClick={() => this.context.model.zoomToFitWaypoints()}
-          >
-            <AspectRatio></AspectRatio>
-          </IconButton>
+          <span>
+            {/* If there's no waypoints, then don't allow user to zoom to fit Waypoints */}
+            <IconButton
+              disabled={doc.pathlist.activePath.params.waypoints.length == 0}
+              onClick={() => doc.zoomToFitWaypoints()}
+            >
+              <AspectRatio></AspectRatio>
+            </IconButton>
+          </span>
         </Tooltip>
         <div>
           <Tooltip
@@ -90,6 +96,7 @@ class ViewOptionsPanel extends Component<Props, State> {
                       PathGradients[key as keyof typeof PathGradients]
                         .description
                     }
+                    key={key}
                   >
                     <MenuItem
                       value={key}
@@ -109,13 +116,26 @@ class ViewOptionsPanel extends Component<Props, State> {
             </IconButton>
           </Tooltip>
         </div>
-        <IconButton
-          onClick={() => {
-            uiState.setViewOptionsPanelOpen(!uiState.isViewOptionsPanelOpen);
-          }}
-        >
-          {uiState.isViewOptionsPanelOpen ? <Close /> : <Visibility />}
-        </IconButton>
+        <div>
+          <Tooltip disableInteractive title={"Variables"}>
+            <IconButton
+              onClick={() => {
+                uiState.setVariablesPanelOpen(!uiState.variablesPanelOpen);
+              }}
+            >
+              {uiState.variablesPanelOpen ? <Close /> : <Functions />}
+            </IconButton>
+          </Tooltip>
+        </div>
+        <Tooltip disableInteractive title={"View Layers"}>
+          <IconButton
+            onClick={() => {
+              uiState.setViewOptionsPanelOpen(!uiState.isViewOptionsPanelOpen);
+            }}
+          >
+            {uiState.isViewOptionsPanelOpen ? <Close /> : <Visibility />}
+          </IconButton>
+        </Tooltip>
         {uiState.isViewOptionsPanelOpen && (
           <div
             style={{
@@ -128,7 +148,7 @@ class ViewOptionsPanel extends Component<Props, State> {
               orientation="vertical"
               className={styles.ToggleGroup}
               value={uiState.visibleLayersOnly().map((i: number) => `${i}`)}
-              onChange={(e, newSelection) => {
+              onChange={(_e, newSelection) => {
                 uiState.setVisibleLayers(
                   newSelection.map((i: string) => Number.parseInt(i) ?? -1)
                 );
@@ -140,6 +160,7 @@ class ViewOptionsPanel extends Component<Props, State> {
                   title={item.name}
                   placement="left"
                   key={index}
+                  //@ts-expect-error We need the value for the toggle group
                   value={`${index}`}
                 >
                   <ToggleButton
@@ -156,6 +177,29 @@ class ViewOptionsPanel extends Component<Props, State> {
                 </Tooltip>
               ))}
             </ToggleButtonGroup>
+          </div>
+        )}
+
+        {uiState.variablesPanelOpen && (
+          <div
+            style={{
+              overflowY: "scroll",
+              position: "absolute",
+              top: "0",
+              right: "105%",
+              background: "var(--background-light-gray)",
+              color: "white",
+              width: "min-content",
+              padding: "8px",
+
+              borderBottomLeftRadius: "10px",
+              borderBottomRightRadius: "10px",
+
+              display: "flex",
+              flexDirection: "column"
+            }}
+          >
+            <ExpressionsConfigPanel></ExpressionsConfigPanel>
           </div>
         )}
       </div>

@@ -9,7 +9,7 @@ FATAL: In-source builds are not allowed.
     )
 endif()
 
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.22)
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
@@ -17,6 +17,12 @@ set(CMAKE_MODULE_PATH
 
 # Allow overriding options in parent projects
 cmake_policy(SET CMP0077 NEW)
+
+# Set default build type to release with debug info (i.e. release mode
+# optimizations are performed, but debug info still exists).
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
+endif()
 
 project(TrajoptLib LANGUAGES CXX)
 
@@ -42,12 +48,6 @@ list(
 )
 if("${isSystemDir}" STREQUAL "-1")
     list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-endif()
-
-# Set default build type to release with debug info (i.e. release mode
-# optimizations are performed, but debug info still exists).
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
 endif()
 
 # Generate compile_commands.json by default
@@ -91,7 +91,7 @@ if(BUILD_TESTING)
     fetchcontent_declare(
         Catch2
         GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v3.6.0
+        GIT_TAG v3.7.0
         CMAKE_ARGS
     )
     fetchcontent_makeavailable(Catch2)
@@ -106,8 +106,8 @@ set(BUILD_EXAMPLES OFF)
 fetchcontent_declare(
     Sleipnir
     GIT_REPOSITORY https://github.com/SleipnirGroup/Sleipnir.git
-    # main on 2024-07-11
-    GIT_TAG 9b50f5d293d74f37f95788ea6cc25a87c32c3d7c
+    # main on 2024-09-07
+    GIT_TAG 6672fd9a2adf710ac5cb0edbaf36bb46b1e4815d
     PATCH_COMMAND
         git apply ${CMAKE_CURRENT_SOURCE_DIR}/cmake/0001-Downgrade-to-C-20.patch
     UPDATE_DISCONNECTED 1
@@ -193,7 +193,7 @@ if(BUILD_TESTING)
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(Catch)
 endif()
-
+get_cmake_property(IS_MULTI_CONFIG GENERATOR_IS_MULTI_CONFIG)
 # Build TrajoptLib tests
 if(BUILD_TESTING)
     file(GLOB_RECURSE TrajoptLib_test_src test/src/*.cpp)
@@ -211,7 +211,11 @@ if(BUILD_TESTING)
     )
     if(NOT CMAKE_TOOLCHAIN_FILE)
         # https://github.com/catchorg/Catch2/issues/2873
-        catch_discover_tests(TrajoptLibTest PROPERTIES SKIP_RETURN_CODE 4)
+        catch_discover_tests(
+            TrajoptLibTest
+            PROPERTIES SKIP_RETURN_CODE 4
+            DL_PATHS ${Sleipnir_BINARY_DIR}/$<${IS_MULTI_CONFIG}:$<CONFIG>>
+        )
     endif()
 endif()
 
@@ -255,7 +259,12 @@ if(BUILD_EXAMPLES)
             )
             if(NOT CMAKE_TOOLCHAIN_FILE)
                 # https://github.com/catchorg/Catch2/issues/2873
-                catch_discover_tests(${example}Test PROPERTIES SKIP_RETURN_CODE 4)
+                catch_discover_tests(
+                    ${example}Test
+                    PROPERTIES SKIP_RETURN_CODE 4
+                    DL_PATHS
+                        ${Sleipnir_BINARY_DIR}/$<${IS_MULTI_CONFIG}:$<CONFIG>>
+                )
             endif()
         endif()
     endforeach()
