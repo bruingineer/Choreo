@@ -13,6 +13,7 @@
 #include "trajopt/constraint/LinearVelocityDirectionConstraint.hpp"
 #include "trajopt/constraint/LinearVelocityMaxMagnitudeConstraint.hpp"
 #include "trajopt/constraint/PointAtConstraint.hpp"
+#include "trajopt/spline/Spline.hpp"
 #include "trajopt/util/Cancellation.hpp"
 #include "trajoptlib/src/lib.rs.h"
 
@@ -608,6 +609,10 @@ std::unique_ptr<DifferentialPathBuilder> differential_path_builder_new() {
 
 void cancel_all() {
   trajopt::GetCancellationFlag() = 1;
+}
+
+void test() {
+  trajopt::test();
 }
 
 }  // namespace trajopt::rsffi
