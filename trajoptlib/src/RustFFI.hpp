@@ -153,6 +153,5 @@ std::unique_ptr<SwervePathBuilder> swerve_path_builder_new();
 std::unique_ptr<DifferentialPathBuilder> differential_path_builder_new();
 
 void cancel_all();
-void test();
 
 }  // namespace trajopt::rsffi

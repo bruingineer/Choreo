@@ -377,7 +377,6 @@ mod ffi {
         fn differential_path_builder_new() -> UniquePtr<DifferentialPathBuilder>;
 
         fn cancel_all();
-        fn test();
     }
 }
 
@@ -481,8 +480,6 @@ impl SwervePathBuilder {
         }
     }
 
-
-
     pub fn sgmt_point_at(
         &mut self,
         from_index: usize,
@@ -548,8 +545,6 @@ impl SwervePathBuilder {
     }
 }
 impl PathBuilder for SwervePathBuilder {
-
-
     fn set_bumpers(&mut self, length: f64, width: f64) {
         crate::ffi::SwervePathBuilder::set_bumpers(self.path_builder.pin_mut(), length, width);
     }
@@ -1135,10 +1130,6 @@ impl Default for DifferentialPathBuilder {
 
 pub fn cancel_all() {
     crate::ffi::cancel_all();
-}
-
-pub fn test() {
-    crate::ffi::test();
 }
 
 use std::any::Any;

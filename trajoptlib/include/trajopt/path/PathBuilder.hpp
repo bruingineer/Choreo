@@ -327,7 +327,8 @@ class TRAJOPT_DLLEXPORT PathBuilder {
   }
 
   Solution CalculateSplineInitialGuess() const {
-    return GenerateSplineInitialGuess<Solution>(initialGuessPoints, controlIntervalCounts);
+    return GenerateSplineInitialGuess<Solution>(initialGuessPoints,
+                                                controlIntervalCounts);
   }
 
   /**
