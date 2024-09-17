@@ -7,9 +7,6 @@
 #include <span>
 #include <vector>
 
-#include <Eigen/Core>
-#include <unsupported/Eigen/Splines>
-
 #include "trajopt/geometry/Pose2.hpp"
 #include "trajopt/geometry/Rotation2.hpp"
 #include "trajopt/geometry/Translation2.hpp"

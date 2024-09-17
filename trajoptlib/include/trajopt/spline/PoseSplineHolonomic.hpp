@@ -6,10 +6,8 @@
 #include <iostream>
 #include <vector>
 
-#include <Eigen/Core>
-#include <unsupported/Eigen/Splines>
+#include "src/alglib/interpolation.h"
 
-#include "trajopt/spline/Spline.h"
 #include "trajopt/geometry/Pose2.hpp"
 #include "trajopt/geometry/Rotation2.hpp"
 #include "trajopt/geometry/Translation2.hpp"
@@ -17,37 +15,34 @@
 
 namespace trajopt {
 
-typedef Eigen::Spline<double, 1> Spline1D;
-typedef Eigen::SplineFitting<Spline1D> SplineFitting1D;
-typedef Eigen::SplineFitting<Eigen::Spline<double, 2>> SplineFitting2D;
-
 class TRAJOPT_DLLEXPORT PoseSplineHolonomic {
  public:
   explicit PoseSplineHolonomic(std::vector<Pose2d> waypoints) {
     size_t num_wpts = waypoints.size();
 
-    std::vector<double> vx, vy, sins, coss;
-    vx.reserve(num_wpts);
-    vy.reserve(num_wpts);
-    sins.reserve(num_wpts);
-    coss.reserve(num_wpts);
-    std::vector<Rotation2d> headings;
-    headings.reserve(waypoints.size());
+    alglib::real_1d_array vx, vy, sins, coss, d, times;
+    vx.setlength(num_wpts);
+    vy.setlength(num_wpts);
+    sins.setlength(num_wpts);
+    coss.setlength(num_wpts);
+    d.setlength(num_wpts);
+    times.setlength(num_wpts);
     for (size_t i = 0; i < num_wpts; ++i) {
       const auto w = waypoints[i];
-      vx.push_back(w.X());
-      vy.push_back(w.Y());
-      coss.push_back(std::cos(w.Rotation().Radians()));
-      sins.push_back(std::sin(w.Rotation().Radians()));
-      times.push_back(static_cast<double>(i));
+      vx[w.X()];
+      vy[w.Y()];
+      coss[std::cos(w.Rotation().Radians())];
+      sins[std::sin(w.Rotation().Radians())];
+      times[static_cast<double>(i)];
+      d[0];
     }
 
-    xSpline.set_points(times, vx, tk::spline::cspline_hermite);
-    ySpline.set_points(times, vy, tk::spline::cspline_hermite);
-    cosSpline.set_points(times, coss, tk::spline::cspline_hermite);
-    sinSpline.set_points(times, sins, tk::spline::cspline_hermite);
+    alglib::spline1dbuildhermite(times, vx, d, xSpline);
+    alglib::spline1dbuildhermite(times, vy, d, ySpline);
+    alglib::spline1dbuildhermite(times, coss, d, cosSpline);
+    alglib::spline1dbuildhermite(times, sins, d, sinSpline);
 
-    for (double t = 0; t <= getEndT(); t += 0.25) {
+    for (double t = 0; t <= times[times.length()-1]; t += 0.25) {
       auto values = getTranslation(t);
       auto head = getHeading(t);
       std::printf("time: %.2f \tx: %.2f\t\ty: %.2f\t\ttheta: %.2f\n", t,
@@ -55,32 +50,34 @@ class TRAJOPT_DLLEXPORT PoseSplineHolonomic {
     }
   }
 
-  double getEndT() const { return times[times.size()-1]; }
-
   Rotation2d getCourse(double t) const {
-    const auto dx = xSpline.deriv(1, t);
-    const auto dy = ySpline.deriv(1, t);
+    double x, dx, d2x;
+    alglib::spline1ddiff(xSpline, t, x, dx, d2x);
+    double y, dy, d2y;
+    alglib::spline1ddiff(ySpline, t, y, dy, d2y);
     const auto course = Rotation2d(std::atan2(dy, dx));
     return course;
   }
 
   Rotation2d getHeading(double t) const {
-    const auto rads = Rotation2d(cosSpline(t), sinSpline(t)).Radians();
+    const auto rads = Rotation2d(
+            alglib::spline1dcalc(cosSpline, t), 
+            alglib::spline1dcalc(sinSpline, t)
+          ).Radians();
     return Rotation2d(rads);
   }
 
   Translation2d getTranslation(double t) const {
-    return Translation2d(xSpline(t), ySpline(t));
+    return Translation2d(alglib::spline1dcalc(xSpline,t), alglib::spline1dcalc(ySpline, t));
   }
 
   Pose2d getPoint(double t) const {
     return Pose2d{getTranslation(t), getHeading(t)};
   }
 
-  std::vector<double> times;
-  tk::spline sinSpline;
-  tk::spline cosSpline;  
-  tk::spline xSpline; 
-  tk::spline ySpline;
+  alglib::spline1dinterpolant sinSpline;
+  alglib::spline1dinterpolant cosSpline;  
+  alglib::spline1dinterpolant xSpline; 
+  alglib::spline1dinterpolant ySpline;
 };
 }  // namespace trajopt
